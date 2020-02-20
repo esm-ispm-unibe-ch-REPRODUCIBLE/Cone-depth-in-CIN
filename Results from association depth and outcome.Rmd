@@ -1,0 +1,118 @@
+---
+title: 'Results from depth-event association using RR'
+author: "Georgia Salanti"
+date: "`r format(Sys.Date(), '%d.%m.%Y')`"
+output:
+  html_document:
+    df_print: paged
+---
+
+### Description
+ I will run two separate analyses; one where the zero dose refers to the colposcopy (COLP) and another one that zero depth means external controls (EXT). The depth I used is the depth-low as I did not what to do with missing high values. 
+
+### Set up the data 
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=TRUE}
+## Settings
+library(netmeta)
+library(meta)
+library(metafor)
+library(readxl)
+library(dosresmeta)
+library(rms)
+
+#get data
+EXT<-read_excel("/Users/georgiasalanti/Google Drive/_mydrive/GRISELDA/Dose-Response/CIN cone depth/Cone-depth-in-CIN/EXT.xlsx")
+COLP<-read_excel("/Users/georgiasalanti/Google Drive/_mydrive/GRISELDA/Dose-Response/CIN cone depth/Cone-depth-in-CIN/COLP.xlsx")
+EXT<-as.data.frame(EXT)
+COLP<-as.data.frame(COLP)
+names(EXT)<-c("Studyname","StudyID","Intervention", "Depthlow","DepthHigh","n","events") 
+names(COLP)<-c("Studyname","StudyID","Intervention", "Depthlow","DepthHigh","n","events") 
+COLP[COLP$events==0,c("n","events")]<-t(t(COLP[COLP$events==0,c("n","events")])+(c(1,0.5)))
+EXT[EXT$events==0,c("n","events")]<-t(t(EXT[EXT$events==0,c("n","events")])+(c(1,0.5)))
+
+```
+### Calculate unadjusted RR for the pre-term outcomes 
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+source("/Users/georgiasalanti/Google Drive/_mydrive/GRISELDA/Dose-Response/CIN cone depth/Cone-depth-in-CIN/Functions needed in the dose-response analysis.R")
+EXTdose=createdatasetdoseresponse.fun(EXT,events,n,StudyID,Depthlow,nameoflogRR="logRR",nameofselogRR="selogRR")
+EXTdose$type<-"ir"    
+COLPdose=createdatasetdoseresponse.fun(COLP,events,n,StudyID,Depthlow,nameoflogRR="logRR",nameofselogRR="selogRR")
+COLPdose$type<-"ir"       
+
+```
+
+### Depth-outcome analysis for EXT
+
+There are
+
+```{r echo=FALSE}
+cat(length(table(EXTdose$Depthlow)))
+```
+depth levels distributed as follows
+```{r echo=FALSE}
+table(EXTdose$Depthlow)
+```
+
+Below is the depth-outcome association
+
+```{r}
+
+knots = c(5, 10, 16)
+doseresEXT = dosresmeta(logRR ~ rcs(Depthlow,knots), StudyID, data = EXTdose,
+                       cases = events, n = n,
+                       type = type, se = selogRR, , proc = "1stage")
+summary(doseresEXT)
+
+newdata = data.frame(Depthlow = seq(0, 26))
+xref = 0
+with(predict(doseresEXT, newdata, xref, exp = TRUE), {
+  plot(get("rcs(Depthlow, knots)Depthlow"), pred, log = "y", type = "l",
+       xlim = c(0, 28), ylim = c(0.95, 5),
+       xlab = "Depth low", ylab = "RR", main = c("Impact of Depth on risk of events (EXT)", text))
+  matlines(get("rcs(Depthlow, knots)Depthlow"), cbind(ci.ub, ci.lb),
+           col = 1, lty = "dashed")
+})
+
+with(EXTdose, rug(Depthlow, quiet = TRUE))
+
+```
+
+
+### Depth-outcome analysis for COLP
+
+
+There are
+
+```{r echo=FALSE}
+cat(length(table(COLPdose$Depthlow)))
+```
+depth levels distributed as follows
+```{r echo=FALSE}
+table(COLPdose$Depthlow)
+```
+
+Below is the depth-outcome association
+
+
+```{r}
+# analysis of COLP
+
+knots = c(5, 13, 17)
+doseresCOLP = dosresmeta(logRR ~ rcs(Depthlow,knots), StudyID, data = COLPdose,
+                        cases = events, n = n,
+                        type = type, se = selogRR, , proc = "1stage")
+summary(doseresCOLP)
+
+newdata = data.frame(Depthlow = seq(0, 26))
+xref = 0
+with(predict(doseresCOLP, newdata, xref, exp = TRUE), {
+  plot(get("rcs(Depthlow, knots)Depthlow"), pred, log = "y", type = "l",
+       xlim = c(0, 28), ylim = c(0.95, 5),
+       xlab = "Depth low", ylab = "RR", main = c("Impact of Depth on risk of events (COLP)", text))
+  matlines(get("rcs(Depthlow, knots)Depthlow"), cbind(ci.ub, ci.lb),
+           col = 1, lty = "dashed")
+})
+with(COLPdose, rug(Depthlow, quiet = TRUE))
+```

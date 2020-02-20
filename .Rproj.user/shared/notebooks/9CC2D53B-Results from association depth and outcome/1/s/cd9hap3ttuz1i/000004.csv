@@ -1,0 +1,5 @@
+"0","source(""/Users/georgiasalanti/Google Drive/_mydrive/GRISELDA/Dose-Response/CIN cone depth/Cone-depth-in-CIN/Functions needed in the dose-response analysis.R"")"
+"0","EXTdose=createdatasetdoseresponse.fun(EXT,events,n,StudyID,Depthlow,nameoflogRR=""logRR"",nameofselogRR=""selogRR"")"
+"0","EXTdose$type<-""ir""    "
+"0","COLPdose=createdatasetdoseresponse.fun(COLP,events,n,StudyID,Depthlow,nameoflogRR=""logRR"",nameofselogRR=""selogRR"")"
+"0","COLPdose$type<-""ir""       "
